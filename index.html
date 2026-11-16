@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Break Return Calculator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --warn: #fbbf24;
+      --success: #4ade80;
+      --danger: #f87171;
+      --border: #334155;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 12px;
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) 12px;
+    }
+    .container {
+      background-color: var(--card);
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 1.35rem;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .countdown-banner {
+      background: linear-gradient(135deg, #1e3a5f, #1e293b);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .countdown-banner.alarm-leave {
+      background: linear-gradient(135deg, #78350f, #451a03);
+      border-color: var(--warn);
+      animation: pulseWarn 1s ease-in-out infinite;
+    }
+    .countdown-banner.alarm-return {
+      background: linear-gradient(135deg, #14532d, #052e16);
+      border-color: var(--success);
+      animation: pulseSuccess 1s ease-in-out infinite;
+    }
+    @keyframes pulseWarn {
+      0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.4); }
+      50% { box-shadow: 0 0 20px 4px rgba(251,191,36,0.15); }
+    }
+    @keyframes pulseSuccess {
+      0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.4); }
+      50% { box-shadow: 0 0 20px 4px rgba(74,222,128,0.15); }
+    }
+    .countdown-phase {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .countdown-time {
+      font-size: 2.6rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+    .countdown-banner.alarm-leave .countdown-time { color: var(--warn); }
+    .countdown-banner.alarm-return .countdown-time { color: var(--success); }
+    .countdown-banner.idle .countdown-time { color: var(--accent); }
+    .countdown-target {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .form-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 7px;
+      color: var(--muted);
+    }
+    .time-row { display: flex; gap: 8px; }
+    input[type="time"], input[type="number"] {
+      flex: 1;
+      background-color: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      outline: none;
+      -webkit-appearance: none;
+      min-width: 0;
+    }
+    input[type="time"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+    .btn-now {
+      background-color: var(--border);
+      color: var(--text);
+      border: none;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-now:hover { background-color: #475569; }
+    .btn-now:active { transform: scale(0.96); }
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .preset-btn {
+      background-color: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 8px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn.active {
+      background-color: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .preset-btn:active { transform: scale(0.96); }
+    .custom-box {
+      display: none;
+      margin-top: 10px;
+      align-items: center;
+      gap: 10px;
+    }
+    .custom-box.visible { display: flex; }
+    .custom-box span { font-size: 0.9rem; color: var(--muted); }
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--bg);
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .toggle-row span { font-size: 0.9rem; font-weight: 500; }
+    input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .results {
+      margin-top: 20px;
+      background-color: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+    }
+    .result-item:first-child {
+      border-bottom: 1px solid var(--border);
+      padding-top: 0;
+    }
+    .result-item:last-child { padding-bottom: 0; }
+    .result-label { font-size: 0.85rem; color: var(--muted); }
+    .result-sub { font-size: 0.72rem; color: var(--muted); display: block; }
+    .time-leave {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--warn);
+      font-variant-numeric: tabular-nums;
+    }
+    .time-return {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--success);
+      font-variant-numeric: tabular-nums;
+    }
+    .alarm-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .alarm-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .alarm-btn:active { transform: scale(0.96); }
+    .alarm-btn.muted { opacity: 0.5; }
+    .alarm-btn.stop {
+      background-color: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+      display: none;
+    }
+    .alarm-btn.stop.visible { display: flex; }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      display: inline-block;
+    }
+    .dot.muted { background: var(--muted); }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 14px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Break Return Calculator</h1>
+    <p class="subtitle">Includes 5-minute walk-back buffer</p>
+
+    <div class="countdown-banner idle" id="countdownBanner">
+      <div class="countdown-phase" id="countdownPhase">Set your break time</div>
+      <div class="countdown-time" id="countdownTime">--:--</div>
+      <div class="countdown-target" id="countdownTarget"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="startTime">Break Start Time</label>
+      <div class="time-row">
+        <input type="time" id="startTime">
+        <button class="btn-now" id="nowBtn" type="button">Now</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Break Type</label>
+      <div class="presets">
+        <button class="preset-btn active" data-mins="15" type="button">15m Break</button>
+        <button class="preset-btn" data-mins="30" type="button">30m Lunch</button>
+        <button class="preset-btn" data-mins="custom" type="button">Custom</button>
+      </div>
+      <div class="custom-box" id="customBox">
+        <input type="number" id="customMins" value="20" min="1" max="180">
+        <span>minutes</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="toggle-row">
+        <span>Include 5-min walk buffer</span>
+        <input type="checkbox" id="bufferToggle" checked>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="result-item" id="leaveRow">
+        <div>
+          <span class="result-label">Leave Break Room</span>
+          <span class="result-sub">Start walking back</span>
+        </div>
+        <span class="time-leave" id="leaveTime">--:--</span>
+      </div>
+      <div class="result-item">
+        <div>
+          <span class="result-label">Back on the Floor</span>
+          <span class="result-sub" id="totalSummary">20 mins total away</span>
+        </div>
+        <span class="time-return" id="returnTime">--:--</span>
+      </div>
+    </div>
+
+    <div class="alarm-controls">
+      <button class="alarm-btn" id="soundToggle" type="button">
+        <span class="dot" id="soundDot"></span>
+        <span id="soundLabel">Sound On</span>
+      </button>
+      <button class="alarm-btn stop" id="stopAlarmBtn" type="button">Stop Alarm</button>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot"></span>
+      <span id="statusText">Running in background</span>
+    </div>
+  </div>
+
+  <script>
+    var startTimeInput = document.getElementById('startTime');
+    var nowBtn = document.getElementById('nowBtn');
+    var presetBtns = document.querySelectorAll('.preset-btn');
+    var customBox = document.getElementById('customBox');
+    var customMinsInput = document.getElementById('customMins');
+    var bufferToggle = document.getElementById('bufferToggle');
+    var leaveRow = document.getElementById('leaveRow');
+    var leaveTimeEl = document.getElementById('leaveTime');
+    var returnTimeEl = document.getElementById('returnTime');
+    var totalSummaryEl = document.getElementById('totalSummary');
+    var countdownBanner = document.getElementById('countdownBanner');
+    var countdownPhase = document.getElementById('countdownPhase');
+    var countdownTime = document.getElementById('countdownTime');
+    var countdownTarget = document.getElementById('countdownTarget');
+    var soundToggle = document.getElementById('soundToggle');
+    var soundDot = document.getElementById('soundDot');
+    var soundLabel = document.getElementById('soundLabel');
+    var stopAlarmBtn = document.getElementById('stopAlarmBtn');
+    var statusText = document.getElementById('statusText');
+
+    var selectedMode = '15';
+    var soundEnabled = true;
+    var audioCtx = null;
+    var alarmInterval = null;
+    var alarmActive = false;
+    var leaveDate = null;
+    var returnDate = null;
+    var alarmsFired = { leave: false, return: false };
+    var wakeLock = null;
+    var tickInterval = null;
+    var notifPermission = 'default';
+
+    // ── Wake Lock: keeps the screen/CPU awake ──
+    function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').then(function(lock) {
+          wakeLock = lock;
+          wakeLock.addEventListener('release', function() { wakeLock = null; });
+        }).catch(function() {});
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    }
+
+    // Re-acquire wake lock when tab becomes visible again
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        if (leaveDate && returnDate) requestWakeLock();
+        updateCountdown();
+      }
+    });
+
+    // ── Notifications ──
+    function requestNotifPermission() {
+      if ('Notification' in window) {
+        notifPermission = Notification.permission;
+        if (notifPermission === 'default') {
+          Notification.requestPermission().then(function(p) {
+            notifPermission = p;
+          });
+        }
+      }
+    }
+
+    function sendNotification(title, body) {
+      if (notifPermission === 'granted' && 'Notification' in window) {
+        try {
+          var n = new Notification(title, {
+            body: body,
+            tag: 'break-alarm',
+            requireInteraction: true,
+            silent: true
+          });
+          n.onclick = function() { window.focus(); n.close(); };
+        } catch(e) {}
+      }
+    }
+
+    // ── Vibration ──
+    function vibrate() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([400, 200, 400, 200, 400]);
+      }
+    }
+
+    // ── Audio ──
+    function ensureAudio() {
+      if (!audioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playBeep() {
+      if (!soundEnabled) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      var t = audioCtx.currentTime;
+      [880, 1100].forEach(function(freq, i) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, t + i * 0.28);
+        gain.gain.linearRampToValueAtTime(0.18, t + i * 0.28 + 0.02);
+        gain.gain.linearRampToValueAtTime(0, t + i * 0.28 + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t + i * 0.28);
+        osc.stop(t + i * 0.28 + 0.22);
+      });
+    }
+
+    function startAlarm() {
+      if (alarmActive) return;
+      alarmActive = true;
+      stopAlarmBtn.classList.add('visible');
+      playBeep();
+      vibrate();
+      alarmInterval = setInterval(playBeep, 1000);
+      requestWakeLock();
+    }
+
+    function stopAlarm() {
+      alarmActive = false;
+      stopAlarmBtn.classList.remove('visible');
+      if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+    }
+
+    stopAlarmBtn.addEventListener('click', function() {
+      stopAlarm();
+      // Allow the next alarm (return) to fire if we haven't reached it yet
+      // Don't re-fire the same alarm we just stopped
+    });
+
+    soundToggle.addEventListener('click', function() {
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) {
+        soundDot.classList.remove('muted');
+        soundLabel.textContent = 'Sound On';
+        soundToggle.classList.remove('muted');
+        ensureAudio();
+      } else {
+        soundDot.classList.add('muted');
+        soundLabel.textContent = 'Sound Off';
+        soundToggle.classList.add('muted');
+        stopAlarm();
+      }
+      saveState();
+    });
+
+    // ── State persistence (survives reloads) ──
+    function saveState() {
+      try {
+        var data = {
+          startTime: startTimeInput.value,
+          selectedMode: selectedMode,
+          customMins: customMinsInput.value,
+          bufferChecked: bufferToggle.checked,
+          soundEnabled: soundEnabled
+        };
+        localStorage.setItem('breakCalc', JSON.stringify(data));
+      } catch(e) {}
+    }
+
+    function loadState() {
+      try {
+        var raw = localStorage.getItem('breakCalc');
+        if (!raw) return false;
+        var data = JSON.parse(raw);
+        if (data.startTime) startTimeInput.value = data.startTime;
+        if (data.selectedMode) {
+          selectedMode = data.selectedMode;
+          presetBtns.forEach(function(b) {
+            b.classList.toggle('active', b.dataset.mins === selectedMode);
+          });
+          if (selectedMode === 'custom') {
+            customBox.classList.add('visible');
+          } else {
+            customBox.classList.remove('visible');
+          }
+        }
+        if (data.customMins) customMinsInput.value = data.customMins;
+        if (typeof data.bufferChecked === 'boolean') bufferToggle.checked = data.bufferChecked;
+        if (typeof data.soundEnabled === 'boolean') {
+          soundEnabled = data.soundEnabled;
+          if (soundEnabled) {
+            soundDot.classList.remove('muted');
+            soundLabel.textContent = 'Sound On';
+            soundToggle.classList.remove('muted');
+          } else {
+            soundDot.classList.add('muted');
+            soundLabel.textContent = 'Sound Off';
+            soundToggle.classList.add('muted');
+          }
+        }
+        return !!data.startTime;
+      } catch(e) { return false; }
+    }
+
+    // ── Time helpers ──
+    function setToNow() {
+      var now = new Date();
+      startTimeInput.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      calculateTimes();
+    }
+
+    function format12Hour(date) {
+      var h = date.getHours();
+      var m = String(date.getMinutes()).padStart(2,'0');
+      var ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      if (h === 0) h = 12;
+      return h + ':' + m + ' ' + ampm;
+    }
+
+    function formatDuration(ms) {
+      if (ms <= 0) return '0:00';
+      var totalSec = Math.floor(ms / 1000);
+      var m = Math.floor(totalSec / 60);
+      var s = totalSec % 60;
+      return m + ':' + String(s).padStart(2,'0');
+    }
+
+    // ── Calculate ──
+    function calculateTimes() {
+      if (!startTimeInput.value) return;
+      var parts = startTimeInput.value.split(':').map(Number);
+      var startH = parts[0], startM = parts[1];
+      var baseMins = selectedMode === 'custom'
+        ? (parseInt(customMinsInput.value, 10) || 0)
+        : parseInt(selectedMode, 10);
+      var bufferMins = bufferToggle.checked ? 5 : 0;
+      var totalMins = baseMins + bufferMins;
+
+      leaveDate = new Date();
+      leaveDate.setHours(startH, startM + baseMins, 0, 0);
+      returnDate = new Date();
+      returnDate.setHours(startH, startM + totalMins, 0, 0);
+
+      leaveRow.style.display = bufferToggle.checked ? 'flex' : 'none';
+      leaveTimeEl.textContent = format12Hour(leaveDate);
+      returnTimeEl.textContent = format12Hour(returnDate);
+      totalSummaryEl.textContent = totalMins + ' mins total away';
+      alarmsFired = { leave: false, return: false };
+      stopAlarm();
+      saveState();
+      requestWakeLock();
+      requestNotifPermission();
+      updateCountdown();
+    }
+
+    // ── Live countdown ──
+    function updateCountdown() {
+      var now = new Date();
+      if (!leaveDate || !returnDate) {
+        countdownBanner.className = 'countdown-banner idle';
+        countdownPhase.textContent = 'Set your break time';
+        countdownTime.textContent = '--:--';
+        countdownTarget.textContent = '';
+        return;
+      }
+      var msToLeave = leaveDate - now;
+      var msToReturn = returnDate - now;
+
+      // Update document title so it's visible in background tabs
+      if (msToLeave > 0) {
+        document.title = formatDuration(msToLeave) + ' \u2014 Break Timer';
+      } else if (msToReturn > 0) {
+        document.title = formatDuration(msToReturn) + ' \u2014 Leave Now!';
+      } else {
+        document.title = 'Back Now! \u2014 Break Timer';
+      }
+
+      if (msToReturn <= 0) {
+        countdownBanner.className = 'countdown-banner alarm-return';
+        countdownPhase.textContent = alarmActive ? 'ALARM \u2014 Back Now!' : 'Back on the floor';
+        countdownTime.textContent = '0:00';
+        countdownTarget.textContent = 'Was due at ' + format12Hour(returnDate);
+        if (!alarmsFired.return) {
+          alarmsFired.return = true;
+          startAlarm();
+          sendNotification('Back on the Floor!', 'Your break is over. Return now.');
+        }
+        return;
+      }
+      if (msToLeave <= 0 && msToReturn > 0) {
+        countdownBanner.className = 'countdown-banner alarm-leave';
+        countdownPhase.textContent = alarmActive ? 'ALARM \u2014 Leave Now!' : 'Time to leave!';
+        countdownTime.textContent = formatDuration(msToReturn);
+        countdownTarget.textContent = 'Back by ' + format12Hour(returnDate);
+        if (!alarmsFired.leave) {
+          alarmsFired.leave = true;
+          startAlarm();
+          sendNotification('Time to Leave!', 'Start walking back now.');
+        }
+        return;
+      }
+      countdownBanner.className = 'countdown-banner idle';
+      countdownPhase.textContent = 'Time until you leave';
+      countdownTime.textContent = formatDuration(msToLeave);
+      countdownTarget.textContent = 'Leave at ' + format12Hour(leaveDate) + ' \u00b7 Back at ' + format12Hour(returnDate);
+    }
+
+    // ── Preset buttons ──
+    presetBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        ensureAudio();
+        presetBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        selectedMode = btn.dataset.mins;
+        if (selectedMode === 'custom') {
+          customBox.classList.add('visible');
+        } else {
+          customBox.classList.remove('visible');
+        }
+        calculateTimes();
+      });
+    });
+
+    startTimeInput.addEventListener('input', calculateTimes);
+    customMinsInput.addEventListener('input', calculateTimes);
+    bufferToggle.addEventListener('change', calculateTimes);
+    nowBtn.addEventListener('click', function() { ensureAudio(); setToNow(); });
+
+    // ── Start ticking ──
+    tickInterval = setInterval(updateCountdown, 1000);
+
+    // ── Init: restore saved state or set to now ──
+    var restored = loadState();
+    if (restored) {
+      calculateTimes();
+      statusText.textContent = 'Restored from previous session';
+      setTimeout(function() { statusText.textContent = 'Running in background'; }, 3000);
+    } else {
+      setToNow();
+    }
+  </script>
+</body>
+</html>
